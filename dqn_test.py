@@ -12,6 +12,7 @@ import cv2
 import os
 import random
 from gym.wrappers import GrayScaleObservation, ResizeObservation, FrameStack, TransformObservation
+from utilities.custom_wrappers import ClipReward, AtariCropping, RescaleRange
 import pygame
 
 # ------- Copy set up code from notebook ----------
@@ -45,47 +46,6 @@ def choose_action(model, state, device, epsilon=0.001):
         # predict
         pred = model(state)
         return int(torch.argmax(pred.squeeze()).item())
-    
-
-# Wrapper to clip reward, taken from documentation
-class ClipReward(gym.RewardWrapper):
-    def __init__(self, env, min_reward, max_reward):
-        super().__init__(env)
-        self.min_reward = min_reward
-        self.max_reward = max_reward
-        self.reward_range = (min_reward, max_reward)
-    
-    def reward(self, reward):
-        return np.clip(reward, self.min_reward, self.max_reward)
-    
-# observation wrapper for cropping
-class AtariCropping(gym.ObservationWrapper):
-    def __init__(self, env):
-        """A gym wrapper that crops image"""
-        super().__init__(env)
-        
-        old_shape = env.observation_space.shape
-        # get new shape after cropping
-        new_shape = (old_shape[0]-50,) + old_shape[1:]
-        self.observation_space = gym.spaces.Box(low=0, high=255, shape=new_shape)
-
-    def observation(self, img):
-        """what happens to each observation"""
-        # crop image (top and bottom, top from 34, bottom remove last 16)
-        img = img[34:-16, :, :]
-        return img
-    
-class RescaleRange(gym.ObservationWrapper):
-    def __init__(self, env):
-        """A gym wrapper that rescale low and high value"""
-        super().__init__(env)
-        self.observation_space = gym.spaces.Box(low=0, high=1, shape=env.observation_space.shape)
-
-    def observation(self, img):
-        """what happens to each observation"""
-        # rescale value from range 0-255 to 0-1
-        img = img.astype('float32') / 255.   
-        return img
 
 def generate_env(env_name):
     env = gym.make(env_name)
@@ -107,14 +67,13 @@ print(f"Device: {device}")
 
 
 # ------- Test script ----------
-
 ENV="BreakoutNoFrameskip-v4"
 # build env
 env = generate_env(ENV)
 print(f"Current Atari environment: {ENV}")
 
 model = DQN_model(env.observation_space.shape, env.action_space.n).to(device)
-model.load_state_dict(torch.load("breakout_wtarget_dqn.pt"))
+model.load_state_dict(torch.load("trained_models/breakout_pen_loselives.pt"))
 
 curr_state = env.reset()
 curr_state = np.asarray(curr_state)
