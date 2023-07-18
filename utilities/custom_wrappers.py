@@ -1,4 +1,5 @@
 import gym
+import numpy as np
 
 # Wrapper to clip reward, taken from documentation
 class ClipReward(gym.RewardWrapper):
