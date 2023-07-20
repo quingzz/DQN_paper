@@ -12,7 +12,7 @@ import cv2
 import os
 import random
 from gym.wrappers import GrayScaleObservation, ResizeObservation, FrameStack, TransformObservation
-from utilities.custom_wrappers import ClipReward, AtariCropping, RescaleRange
+from utilities.custom_wrappers import ClipReward, AtariCropping, RescaleRange, MaxAndSkipEnv
 import pygame
 
 # ------- Copy set up code from notebook ----------
@@ -48,7 +48,7 @@ def choose_action(model, state, device, epsilon=0.001):
         return int(torch.argmax(pred.squeeze()).item())
 
 def generate_env(env_name):
-    env = gym.make(env_name)
+    env = gym.make(env_name, render_mode="human")
     env = ClipReward(env, -1, 1)
     env = AtariCropping(env)
     # gray scale frame
@@ -56,6 +56,7 @@ def generate_env(env_name):
     env = RescaleRange(env)
     # resize frame to 84×84 image
     env = ResizeObservation(env, (84, 84))
+    env = MaxAndSkipEnv(env)
     # stack 4 frames (equivalent to what phi does in paper) 
     env = FrameStack(env, num_stack=4)
     
@@ -65,29 +66,40 @@ def generate_env(env_name):
 device = torch.device("mps" if torch.backends.mps.is_available() else "cuda" if torch.cuda.is_available() else "cpu")
 print(f"Device: {device}")
 
+model_to_env = {
+    "pong_wskipframes.pt":"PongDeterministic-v4",
+    "breakout_dqn_5100000.pt":"BreakoutDeterministic-v4",
+    "breakout_wtarget.pt":"BreakoutDeterministic-v4",
+}
+
 
 # ------- Test script ----------
-ENV="BreakoutNoFrameskip-v4"
+MODEL="pong_wskipframes.pt"
+ENV=model_to_env[MODEL]
 # build env
 env = generate_env(ENV)
 print(f"Current Atari environment: {ENV}")
 
 model = DQN_model(env.observation_space.shape, env.action_space.n).to(device)
-model.load_state_dict(torch.load("trained_models/breakout_pen_loselives.pt"))
+model.load_state_dict(torch.load(f"trained_models/{MODEL}"))
 
 curr_state = env.reset()
 curr_state = np.asarray(curr_state)
 
 steps = 10000
+rewards = [0]
 for i in range(steps):
     action = choose_action(model, curr_state, device)
     obs, reward, done, _ = env.step(action)
     obs = np.asarray(obs)
     env.render()
     curr_state = obs
+    rewards[-1]+=reward
     if done: 
         curr_state = env.reset()
         curr_state = np.asarray(curr_state)
+        rewards.append(0)
 # close env
 env.reset()
 env.close()
+print(rewards[:-1])
