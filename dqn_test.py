@@ -11,7 +11,7 @@ import numpy as np
 import cv2
 import os
 import random
-from gym.wrappers import GrayScaleObservation, ResizeObservation, FrameStack, TransformObservation
+from gym.wrappers import GrayScaleObservation, ResizeObservation, FrameStack, RecordVideo
 from utilities.custom_wrappers import ClipReward, AtariCropping, RescaleRange, MaxAndSkipEnv
 import pygame
 
@@ -48,7 +48,7 @@ def choose_action(model, state, device, epsilon=0.001):
         return int(torch.argmax(pred.squeeze()).item())
 
 def generate_env(env_name):
-    env = gym.make(env_name)
+    env = gym.make(env_name, render_mode="rgb_array")
     env = MaxAndSkipEnv(env, skip=4)
     env = ClipReward(env, -1, 1)
     env = AtariCropping(env)
@@ -68,8 +68,8 @@ print(f"Device: {device}")
 
 model_to_env = {
     "pong_wskipframes.pt":"PongNoFrameskip-v4",
-    "breakout_dqn_5100000.pt":"BreakoutDeterministic-v4",
-    "breakout_wtarget.pt":"BreakoutDeterministic-v4",
+    "breakout_wtarget_dqn.pt":"BreakoutNoFrameskip-v4",
+    "breakout_pen_loselives.pt":"BreakoutNoFrameskip-v4",
 }
 
 
@@ -78,6 +78,10 @@ MODEL="pong_wskipframes.pt"
 ENV=model_to_env[MODEL]
 # build env
 env = generate_env(ENV)
+
+# record every testing episode
+# env = RecordVideo(env, video_folder="PongRecords", name_prefix="pong_demo", step_trigger= lambda x: True)
+
 print(f"Current Atari environment: {ENV}")
 
 model = DQN_model(env.observation_space.shape, env.action_space.n).to(device)
