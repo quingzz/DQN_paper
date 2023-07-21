@@ -52,7 +52,7 @@ class MaxAndSkipEnv(gym.Wrapper):
         # _skip = 4
         self._skip       = skip
 
-    def _step(self, action):
+    def step(self, action):
         total_reward = 0.0
         done = None
         info = None
@@ -68,6 +68,9 @@ class MaxAndSkipEnv(gym.Wrapper):
             if done:
                 break
 
-        max_frame = np.max(np.stack(self._obs_buffer), axis=0)
+        # max_frame = np.max(np.stack(self._obs_buffer), axis=0)
+        max_frame = self._obs_buffer[1]
+
         # max_frame = self._obs_buffer[1]
         return max_frame, total_reward, done, info
+    

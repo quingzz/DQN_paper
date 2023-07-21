@@ -48,7 +48,8 @@ def choose_action(model, state, device, epsilon=0.001):
         return int(torch.argmax(pred.squeeze()).item())
 
 def generate_env(env_name):
-    env = gym.make(env_name, render_mode="human")
+    env = gym.make(env_name)
+    env = MaxAndSkipEnv(env, skip=4)
     env = ClipReward(env, -1, 1)
     env = AtariCropping(env)
     # gray scale frame
@@ -56,7 +57,6 @@ def generate_env(env_name):
     env = RescaleRange(env)
     # resize frame to 84×84 image
     env = ResizeObservation(env, (84, 84))
-    env = MaxAndSkipEnv(env)
     # stack 4 frames (equivalent to what phi does in paper) 
     env = FrameStack(env, num_stack=4)
     
@@ -67,7 +67,7 @@ device = torch.device("mps" if torch.backends.mps.is_available() else "cuda" if 
 print(f"Device: {device}")
 
 model_to_env = {
-    "pong_wskipframes.pt":"PongDeterministic-v4",
+    "pong_wskipframes.pt":"PongNoFrameskip-v4",
     "breakout_dqn_5100000.pt":"BreakoutDeterministic-v4",
     "breakout_wtarget.pt":"BreakoutDeterministic-v4",
 }
