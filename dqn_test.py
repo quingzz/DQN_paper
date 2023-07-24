@@ -14,6 +14,7 @@ import random
 from gym.wrappers import GrayScaleObservation, ResizeObservation, FrameStack, RecordVideo
 from utilities.custom_wrappers import ClipReward, AtariCropping, RescaleRange, MaxAndSkipEnv
 import pygame
+import argparse
 
 # ------- Copy set up code from notebook ----------
 # get code from DQN notebook to set up
@@ -62,38 +63,45 @@ def generate_env(env_name):
     
     return env
 
-# check for mps, cuda or cpu
-device = torch.device("mps" if torch.backends.mps.is_available() else "cuda" if torch.cuda.is_available() else "cpu")
-print(f"Device: {device}")
-
-model_to_env = {
-    "pong_wskipframes.pt":"PongNoFrameskip-v4",
-    "breakout_wtarget_dqn.pt":"BreakoutNoFrameskip-v4",
-    "breakout_pen_loselives.pt":"BreakoutNoFrameskip-v4",
-}
-
-
 # ------- Test script ----------
-MODEL="pong_wskipframes.pt"
-ENV=model_to_env[MODEL]
+# set up params
+model_to_env = {
+    "pong":"PongNoFrameskip-v4",
+    "breakout":"BreakoutNoFrameskip-v4",
+    "breakout_pen_loselives_0001":"BreakoutNoFrameskip-v4",
+}
+DEVICE = torch.device("mps" if torch.backends.mps.is_available() else "cuda" if torch.cuda.is_available() else "cpu")
+MODEL = "pong"
+ENV = model_to_env[MODEL]
+RECORD = False #whether to record testing games
+RECORD_PREFIX = "demo" #prefix for testing videos
+RECORD_FREQ = 2 #record video for testing per RECORD_FREQ episode
+
 # build env
 env = generate_env(ENV)
-
 # record every testing episode
-# env = RecordVideo(env, video_folder="PongRecords", name_prefix="pong_demo", step_trigger= lambda x: True)
+if RECORD:
+    if not os.path.exists("records"):
+        # Create a new directory if it does not exist
+        os.makedirs("records")
+    env = RecordVideo(env, video_folder=f"records/{MODEL}", name_prefix=RECORD_PREFIX, episode_trigger= lambda x: x%RECORD_FREQ==0)
 
+print(f"-----------------")
+print(f"Device: {DEVICE}")
 print(f"Current Atari environment: {ENV}")
+if RECORD:
+    print(f"Recording saved to: records/{MODEL}")
+print(f"-----------------")
 
-model = DQN_model(env.observation_space.shape, env.action_space.n).to(device)
-model.load_state_dict(torch.load(f"trained_models/{MODEL}"))
-
+model = DQN_model(env.observation_space.shape, env.action_space.n).to(DEVICE)
+model.load_state_dict(torch.load(f"trained_models/{MODEL}.pt", map_location=DEVICE))
 curr_state = env.reset()
 curr_state = np.asarray(curr_state)
 
 steps = 10000
 rewards = [0]
 for i in range(steps):
-    action = choose_action(model, curr_state, device)
+    action = choose_action(model, curr_state, DEVICE)
     obs, reward, done, _ = env.step(action)
     obs = np.asarray(obs)
     env.render()
@@ -106,4 +114,5 @@ for i in range(steps):
 # close env
 env.reset()
 env.close()
-print(rewards[:-1])
+print(f"-----------------")
+print("Clipped reward each episode: ", rewards[:-1])

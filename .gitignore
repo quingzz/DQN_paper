@@ -2,6 +2,7 @@ experimental_models
 .ipynb_checkpoints
 Breakout
 Breakout_PenalizeLoseLives
+Breakout_PenalizeLoseLives_LR00001
 Pong
 PongNoSKip
 PongRecords

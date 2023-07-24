@@ -45,12 +45,14 @@ class RescaleRange(gym.ObservationWrapper):
 
 class MaxAndSkipEnv(gym.Wrapper):
     """Return only every 4th frame"""
-    def __init__(self, env=None, skip=4):
+    def __init__(self, env=None, skip=4, max=False):
         super(MaxAndSkipEnv, self).__init__(env)
         # Initialise a double ended queue that can store a maximum of two states
         self._obs_buffer = deque(maxlen=2)
         # _skip = 4
         self._skip       = skip
+        # whether to choose max frame between last 2 frames or automatically takes last frame
+        self.max = max
 
     def step(self, action):
         total_reward = 0.0
@@ -67,10 +69,8 @@ class MaxAndSkipEnv(gym.Wrapper):
             # If the game ends, break the for loop 
             if done:
                 break
+        
+        max_frame=np.max(np.stack(self._obs_buffer), axis=0) if self.max else self._obs_buffer[1]
 
-        # max_frame = np.max(np.stack(self._obs_buffer), axis=0)
-        max_frame = self._obs_buffer[1]
-
-        # max_frame = self._obs_buffer[1]
         return max_frame, total_reward, done, info
     
