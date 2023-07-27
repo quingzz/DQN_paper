@@ -63,20 +63,33 @@ def generate_env(env_name):
     
     return env
 
-# ------- Test script ----------
-# set up params
+def require_special_handling(env_name):
+    env = generate_env(env_name) 
+    env.reset()
+    observation, reward, done, info = env.step(env.action_space.sample())
+                                               
+    return info['lives']>1
+
+# ------- PARAMETERS: modify this section for your use case ----------
+
+# model mapping to its atari env
 model_to_env = {
     "pong":"PongNoFrameskip-v4",
     "breakout":"BreakoutNoFrameskip-v4",
     "breakout_pen_loselives_0001":"BreakoutNoFrameskip-v4",
+    "breakout_000025":"BreakoutNoFrameskip-v4",
+    "breakout_000025_cont":"BreakoutNoFrameskip-v4",
 }
 DEVICE = torch.device("mps" if torch.backends.mps.is_available() else "cuda" if torch.cuda.is_available() else "cpu")
-MODEL = "pong"
-ENV = model_to_env[MODEL]
+MODEL = "breakout_000025_cont" #name of model to be tested
+ENV = model_to_env[MODEL] #env to run model
 RECORD = False #whether to record testing games
-RECORD_PREFIX = "demo" #prefix for testing videos
-RECORD_FREQ = 2 #record video for testing per RECORD_FREQ episode
+RECORD_PREFIX = "demo" #prefix for recorded videos
+RECORD_FREQ = 2 #record video per RECORD_FREQ episode
+SPECIAL_HANDLING = require_special_handling(ENV) # whether to perform FIRE when loose life (required for Breakout)
 
+
+# ------- TEST SCRIPT ----------
 # build env
 env = generate_env(ENV)
 # record every testing episode
@@ -88,29 +101,39 @@ if RECORD:
 
 print(f"-----------------")
 print(f"Device: {DEVICE}")
-print(f"Current Atari environment: {ENV}")
+print(f"Current Atari environment: {ENV}, Require handling: {SPECIAL_HANDLING}")
 if RECORD:
     print(f"Recording saved to: records/{MODEL}")
 print(f"-----------------")
 
 model = DQN_model(env.observation_space.shape, env.action_space.n).to(DEVICE)
 model.load_state_dict(torch.load(f"trained_models/{MODEL}.pt", map_location=DEVICE))
+
 curr_state = env.reset()
 curr_state = np.asarray(curr_state)
 
 steps = 10000
 rewards = [0]
+curr_lives = 0
 for i in range(steps):
     action = choose_action(model, curr_state, DEVICE)
-    obs, reward, done, _ = env.step(action)
+    obs, reward, done, info = env.step(action)
     obs = np.asarray(obs)
     env.render()
     curr_state = obs
     rewards[-1]+=reward
+    
+    # special handling for breakout
+    if SPECIAL_HANDLING and (info['lives']<curr_lives):
+        obs, reward, done, info = env.step(1)
+        curr_state = np.asarray(obs)   
+    curr_lives = info['lives']   
+        
     if done: 
         curr_state = env.reset()
         curr_state = np.asarray(curr_state)
         rewards.append(0)
+        curr_lives=0
 # close env
 env.reset()
 env.close()
