@@ -51,7 +51,8 @@ def choose_action(model, state, device, epsilon=0.001):
 def generate_env(env_name):
     env = gym.make(env_name, render_mode="rgb_array")
     env = MaxAndSkipEnv(env, skip=4)
-    env = ClipReward(env, -1, 1)
+    # get unclipped reward for testing
+    # env = ClipReward(env, -1, 1) 
     env = AtariCropping(env)
     # gray scale frame
     env = GrayScaleObservation(env, keep_dim=False)
@@ -79,11 +80,12 @@ model_to_env = {
     "breakout_pen_loselives_0001":"BreakoutNoFrameskip-v4",
     "breakout_000025":"BreakoutNoFrameskip-v4",
     "breakout_000025_cont":"BreakoutNoFrameskip-v4",
+    
 }
 DEVICE = torch.device("mps" if torch.backends.mps.is_available() else "cuda" if torch.cuda.is_available() else "cpu")
-MODEL = "breakout_000025_cont" #name of model to be tested
+MODEL = "breakout_retry" #name of model to be tested
 ENV = model_to_env[MODEL] #env to run model
-RECORD = False #whether to record testing games
+RECORD = True #whether to record testing games
 RECORD_PREFIX = "demo" #prefix for recorded videos
 RECORD_FREQ = 2 #record video per RECORD_FREQ episode
 SPECIAL_HANDLING = require_special_handling(ENV) # whether to perform FIRE when loose life (required for Breakout)
@@ -124,9 +126,10 @@ for i in range(steps):
     rewards[-1]+=reward
     
     # special handling for breakout
-    if SPECIAL_HANDLING and (info['lives']<curr_lives):
-        obs, reward, done, info = env.step(1)
-        curr_state = np.asarray(obs)   
+    # if SPECIAL_HANDLING and (info['lives']<curr_lives):
+    #     obs, reward, done, info = env.step(1)
+    #     rewards[-1]+=reward
+    #     curr_state = np.asarray(obs)   
     curr_lives = info['lives']   
         
     if done: 
@@ -138,4 +141,4 @@ for i in range(steps):
 env.reset()
 env.close()
 print(f"-----------------")
-print("Clipped reward each episode: ", rewards[:-1])
+print("Unclipped reward each episode: ", rewards[:-1])
