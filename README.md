@@ -1,5 +1,5 @@
 # Implementing vanilla DQN model 
-A simple implementation of vanilla DQN model, featured in the paper Playing Atari with Deep Reinforcement Learning (2013) [arXiv:1312.5602](https://doi.org/10.48550/arXiv.1312.5602)
+A simple implementation in Pytorch of vanilla DQN model, featured in the paper Playing Atari with Deep Reinforcement Learning (2013) [arXiv:1312.5602](https://doi.org/10.48550/arXiv.1312.5602)
 
 ### Environment specifications:     
 Python version:  3.9.15   
