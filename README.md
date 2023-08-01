@@ -21,16 +21,14 @@ Dependencies:
 ### Pong
 Model after 2,500,000 training steps (Learning rate=0.00025)   
 
-[Pong Demo Vid](https://github.com/quingzz/DQN_paper/assets/90673616/830c3160-8085-4222-966e-3bc46dbfcbfd)
+[Pong Demo Vid](https://github.com/quingzz/DQN_paper/assets/90673616/fc9efb13-9dbf-4354-8dfc-808aa2b8c226)
 
 ### Breakout 
 Model after 24,000,000 training steps (Learning rate=0.000025, wihout penalizing lose lives)    
 ***Note:*** The model prone to perform random actions instead of FIRE (to reset game) after losing lives (which was cut out by force reset)
 
 
-[Breakout No Penalize Demo Vid](https://github.com/quingzz/DQN_paper/assets/90673616/eacd7685-99fc-4752-81c2-ac5e3f541fea)
-
-
+[Breakout No Penalize Demo Vid](https://github.com/quingzz/DQN_paper/assets/90673616/f14bde91-1c6e-41d8-90e1-4173263aed72)
 
 Model (Learning rate=0.000025, with penalizing lose lives) (to be updated)    
 N/A
