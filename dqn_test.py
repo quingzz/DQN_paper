@@ -64,31 +64,21 @@ def generate_env(env_name):
     
     return env
 
-def require_special_handling(env_name):
-    env = generate_env(env_name) 
-    env.reset()
-    observation, reward, done, info = env.step(env.action_space.sample())
-                                               
-    return info['lives']>1
-
 # ------- PARAMETERS: modify this section for your use case ----------
 
 # model mapping to its atari env
 model_to_env = {
     "pong":"PongNoFrameskip-v4",
-    "breakout":"BreakoutNoFrameskip-v4",
-    "breakout_pen_loselives_0001":"BreakoutNoFrameskip-v4",
     "breakout_000025":"BreakoutNoFrameskip-v4",
-    "breakout_000025_cont":"BreakoutNoFrameskip-v4",
-    
+    "best":"BreakoutNoFrameskip-v4",
 }
-DEVICE = torch.device("mps" if torch.backends.mps.is_available() else "cuda" if torch.cuda.is_available() else "cpu")
-MODEL = "breakout_retry" #name of model to be tested
-ENV = model_to_env[MODEL] #env to run model
-RECORD = True #whether to record testing games
+MODEL = "best_forcefire" #name of model to be tested
+RECORD = False #whether to record testing games
 RECORD_PREFIX = "demo" #prefix for recorded videos
 RECORD_FREQ = 2 #record video per RECORD_FREQ episode
-SPECIAL_HANDLING = require_special_handling(ENV) # whether to perform FIRE when loose life (required for Breakout)
+
+DEVICE = torch.device("mps" if torch.backends.mps.is_available() else "cuda" if torch.cuda.is_available() else "cpu")
+ENV = model_to_env[MODEL] #env to run model
 
 
 # ------- TEST SCRIPT ----------
@@ -103,7 +93,7 @@ if RECORD:
 
 print(f"-----------------")
 print(f"Device: {DEVICE}")
-print(f"Current Atari environment: {ENV}, Require handling: {SPECIAL_HANDLING}")
+print(f"Current Atari environment: {ENV}")
 if RECORD:
     print(f"Recording saved to: records/{MODEL}")
 print(f"-----------------")
@@ -125,11 +115,6 @@ for i in range(steps):
     curr_state = obs
     rewards[-1]+=reward
     
-    # special handling for breakout
-    # if SPECIAL_HANDLING and (info['lives']<curr_lives):
-    #     obs, reward, done, info = env.step(1)
-    #     rewards[-1]+=reward
-    #     curr_state = np.asarray(obs)   
     curr_lives = info['lives']   
         
     if done: 
@@ -137,8 +122,9 @@ for i in range(steps):
         curr_state = np.asarray(curr_state)
         rewards.append(0)
         curr_lives=0
+        
 # close env
 env.reset()
 env.close()
 print(f"-----------------")
-print("Unclipped reward each episode: ", rewards[:-1])
+print("Unclipped reward each episode: ", rewards[:-1] if len(rewards)>1 else rewards)
